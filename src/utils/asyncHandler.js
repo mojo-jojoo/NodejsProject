@@ -1,18 +1,11 @@
 // 
 
-const asyncHandler = (requestHandler)=> async (req,res,next)=>{
+export const asyncHandler = (requestHandler)=> async (req,res,next)=>{
     Promise.resolve(requestHandler(req,res,next)).catch(next);
 }
 
-
-    
- 
     
 
-
-
-    
-export default asyncHandler;
 
 
 // try catch sai error handle kr rhe hain

@@ -15,9 +15,14 @@ app.use(cors({
 app.use(express.json({limit:"16kb"}))
 app.use(express.urlencoded({extended:true,limit:"16kb"}))
 app.use(express.static("public"))//bs yh asi apne server pr images wgrh rkhne k liya favicon apne server pr rkh sakhte 
-
-
 app.use(cookieParser())
+
+
+// routes import userRoutes from "./routes/user.routes.js"
+import userRoutes from "./routes/user.routes.js"
+
+//routes declaration
+app.use("/api/v1/users",userRoutes)  
 
 
 export{app}
