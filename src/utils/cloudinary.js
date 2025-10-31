@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from "cloudinary"
 import multer from "multer"
+import fs from "fs"
 
 
 cloudinary.config({

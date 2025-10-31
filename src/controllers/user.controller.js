@@ -1,8 +1,9 @@
 import {asyncHandler} from '../utils/asyncHandler.js';
 import User from '../models/user.model.js';
 import ApiError from "../utils/ApiError.js"
-import cloudinary from '../config/cloudinary.config.js';
 import ApiResponse from '../utils/ApiResponse.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import bcryptjs from 'bcryptjs';
 
 
 
@@ -41,16 +42,25 @@ const registerUser= asyncHandler(async (req,res,next)=>{
 //4) model mein do file lyrhe hein wo check kro like check images check avatar etc 
    // skipped for now as we are not handling files in this example  lkin dekho files ha tou handle kaise kaarni ha optionally nichy code dekho multer hmy files ka access dene k liye help krta ha hoskhta ha access ho hoskhta ha yh nhi 
 
-   const avatarLocalPath = req.files?.avatar[0]?.path;//q k yh abhi server pr ha cloudinary pr nhi ha tou local path le rhy hein
-   const coverPhotoLocalPath = req.files?.coverPhoto[0]?.path;
+   const avatarLocalPath = req.files?.avatar?.[0]?.path;//q k yh abhi server pr ha cloudinary pr nhi ha tou local path le rhy hein
+   //const coverImageLocalPath = req.files?.coverImage?.[0]?.path; 
 
-   if(!avatarLocalPath || !coverPhotoLocalPath){
-    return next(new ApiError("Avatar and Cover Photo are required",400));
+   let coverImageLocalPath; // scope k liye let use kr rhy hein 
+
+   if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+    coverImageLocalPath = req.files.coverImage[0].path;
+   } else {
+    coverImageLocalPath = null;
+   }
+
+    
+   if(!avatarLocalPath || !coverImageLocalPath){
+    return next(new ApiError("Avatar and Cover Image are required",400));
    }
    
 //5) upload them to cloudinary aur get their urls 
  const avatar = await uploadOnCloudinary(avatarLocalPath);
- const coverPhoto = await uploadOnCloudinary(coverPhotoLocalPath);
+ const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
  //avatar ko required field rkha ha meny ek dafa or check krlo gya ha yh nhi gya q k database phatyga agr nhi gya tou
    if(!avatar){
@@ -58,22 +68,18 @@ const registerUser= asyncHandler(async (req,res,next)=>{
    }
 
 //6) user create krna ha database mein create user object using User model and save it to database 
-   const newUser = await User.create({
-    fullName,
-      username: username.toLowerCase(),
-      email,
-      password,
-      avatar:{
-        public_id: avatar.public_id,
-        url: avatar.url
-      },
-      coverPhoto:{
-        public_id: coverPhoto.public_id,
-        url: coverPhoto.url
-      }
-   });   
-   
-   const userCreated = await newUser.findById(newUser._id).select("-password -refreshToken"); //7 remove password from response and refresh token field bhi remove krdo security k liye although wo encrypted hoga par phir bhi hum nhi bhejna chahte
+        const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email, 
+        password,
+        username: username.toLowerCase()
+    })
+
+    const userCreated = await User.findById(user._id).select(
+        "-password -refreshToken"
+    ); //7 remove password from response and refresh token field bhi remove krdo security k liye although wo encrypted hoga par phir bhi hum nhi bhejna chahte
 
    //8. check kro ki user create hua ya nhi agar hua to success response bhejo front end pr agar nhi hua to error bhejo
    if(!userCreated){
